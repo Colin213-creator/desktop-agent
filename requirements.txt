@@ -4,6 +4,7 @@ mss>=9.0
 pyautogui>=0.9.54
 pynput>=1.7.6
 pyperclip>=1.8
+Pillow>=10.0
 uiautomation>=2.0.18
 fastapi>=0.110
 uvicorn>=0.29
