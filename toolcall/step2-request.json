@@ -1,0 +1,54 @@
+{
+  "model": "qwen2.5:3b",
+  "stream": false,
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一个远程桌面助手。需要事实时必须调用工具获取，不要凭空猜测。"
+    },
+    {
+      "role": "user",
+      "content": "帮我确认一下笔记本上的 AI 服务端口 11434 是不是已经起来了？"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call_lt0bla1q",
+          "function": {
+            "index": 0,
+            "name": "check_port",
+            "arguments": {
+              "port": 11434
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_name": "check_port",
+      "content": "{\"port\":11434,\"listening\":true,\"protocol\":\"tcp\",\"bind\":\"0.0.0.0:11434\",\"pid\":4448}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "check_port",
+        "description": "检查本机指定端口当前是否有程序在监听，用于判断远程桌面或 Agent 服务是否已启动。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "要检查的端口号，例如 3389 是远程桌面，11434 是 Ollama。"
+            }
+          },
+          "required": ["port"]
+        }
+      }
+    }
+  ]
+}

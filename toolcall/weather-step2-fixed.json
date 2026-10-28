@@ -1,0 +1,35 @@
+{
+  "model": "qwen2.5:3b",
+  "stream": false,
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一个助手。涉及天气、气温这类实时事实必须依据工具返回的数据回答，禁止凭记忆编造。"
+    },
+    {
+      "role": "user",
+      "content": "查询上海现在的气温"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call_wuktjd82",
+          "function": {
+            "index": 0,
+            "name": "get_weather",
+            "arguments": {
+              "city": "上海"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_name": "get_weather",
+      "content": "{\"city\":\"上海\",\"temp_c\":26,\"condition\":\"多云\",\"raw\":\"上海: ☁️  +26°C\",\"source\":\"wttr.in\"}"
+    }
+  ]
+}

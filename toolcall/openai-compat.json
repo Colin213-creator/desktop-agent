@@ -1,0 +1,26 @@
+{
+  "model": "qwen2.5:3b",
+  "stream": false,
+  "messages": [
+    {
+      "role": "user",
+      "content": "检查 3389 端口有没有在监听，用工具查。"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "check_port",
+        "description": "检查本机指定端口当前是否有程序在监听。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "port": { "type": "integer", "description": "端口号" }
+          },
+          "required": ["port"]
+        }
+      }
+    }
+  ]
+}

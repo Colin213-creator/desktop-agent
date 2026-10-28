@@ -1,0 +1,14 @@
+{
+  "model": "qwen2.5:3b",
+  "messages": [
+    { "role": "user", "content": "查询上海现在的气温" },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        { "function": { "name": "get_weather", "arguments": { "city": "上海" } } }
+      ]
+    },
+    { "role": "tool", "content": "{\"city\":\"上海\",\"temp\":\"26℃\",\"desc\":\"晴天\"}" }
+  ],
+  "stream": false
+}
