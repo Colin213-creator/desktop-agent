@@ -108,10 +108,12 @@ python -m eval.run_eval --config multi
 
 尚未接线（独立模块可用，但主循环未自动调用）：
 
-- 规划器已支持 `skills` / `sop` 参数，主循环目前传入空列表
 - 截图脱敏已在 `safety/privacy.py` 实现，尚未接入 `capture`
 - 远程层是旁路，未与主循环联调
 - `--live` 的完整跨应用任务尚未完成端到端验证
+
+已接线：主循环在规划前会检索技能库与 SOP 知识库（`use_rag=True`），
+检索失败自动退化为现场规划。
 
 这些缺口在 [实施计划](docs/superpowers/plans/2026-10-28-desktop-agent.md) 的后续任务中收口。
 

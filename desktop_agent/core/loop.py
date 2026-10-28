@@ -15,6 +15,8 @@ from pathlib import Path
 from ..actions.registry import TOOLS
 from ..config import Settings, load_settings
 from ..llm import chat
+from ..memory.knowledge import KnowledgeBase
+from ..memory.skills import SkillStore
 from ..memory.trace import StepRecord, TraceWriter
 from ..perception.screen import ScreenShot, capture
 from ..safety.budget import Budget
@@ -81,11 +83,33 @@ def operator(step: PlanStep, shot: ScreenShot) -> dict:
     return {"tool": step.tool_hint or "screenshot", "args": {}}
 
 
+def _retrieve_context(task: str) -> tuple[list[dict], list[dict]]:
+    """检索经验与制度。任一失败都退化为空，不阻断任务。"""
+    try:
+        skills = [
+            {"task": skill.task, "tools": skill.tools}
+            for skill in SkillStore(Path("skills")).search(task, k=3)
+        ]
+    except Exception:
+        skills = []
+
+    try:
+        sop = [
+            {"text": chunk.text, "heading": chunk.heading}
+            for chunk in KnowledgeBase(Path("knowledge/index")).search(task, k=3)
+        ]
+    except Exception:
+        sop = []
+
+    return skills, sop
+
+
 def run_task(
     task: str,
     confirm_fn=None,
     settings: Settings | None = None,
     dry_run: bool = False,
+    use_rag: bool = True,
 ) -> TaskResult:
     """跑完一个任务。dry_run=True 时只规划和选择动作，不真正执行。"""
     settings = settings or load_settings()
@@ -112,8 +136,11 @@ def run_task(
             run_dir=run_dir,
         )
 
+    # 先检索经验与制度，再规划。检索失败不阻断任务，退化为现场规划。
+    skill_hits, sop_hits = _retrieve_context(task) if use_rag else ([], [])
+
     try:
-        plan = make_plan(task, [], [])
+        plan = make_plan(task, skill_hits, sop_hits)
     except Exception as exc:
         return finish("failed", f"规划失败：{exc}", 0)
 
