@@ -10,6 +10,9 @@ from .files import (
     read_file,
     write_file,
 )
+from .apps import open_app
+from .keyboard import press_keys, type_text
+from .mouse import click, move
 
 
 def _fn(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -62,6 +65,48 @@ TOOLS: list[dict] = [
         },
         ["path", "content"],
     ),
+    _fn(
+        "click",
+        "在屏幕绝对坐标处单击鼠标左键。仅在需要点击按钮或图标时使用。",
+        {
+            "x": {"type": "integer", "description": "屏幕横坐标"},
+            "y": {"type": "integer", "description": "屏幕纵坐标"},
+        },
+        ["x", "y"],
+    ),
+    _fn(
+        "move",
+        "把鼠标移动到屏幕绝对坐标，不点击。",
+        {
+            "x": {"type": "integer", "description": "屏幕横坐标"},
+            "y": {"type": "integer", "description": "屏幕纵坐标"},
+        },
+        ["x", "y"],
+    ),
+    _fn(
+        "type_text",
+        "向当前焦点窗口输入一段文字。中文会自动走剪贴板粘贴。",
+        {"text": {"type": "string", "description": "要输入的文字"}},
+        ["text"],
+    ),
+    _fn(
+        "press_keys",
+        "按下快捷键组合，例如 [\"ctrl\", \"s\"] 表示 Ctrl+S。",
+        {
+            "keys": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "按键序列，按顺序同时按下",
+            }
+        },
+        ["keys"],
+    ),
+    _fn(
+        "open_app",
+        "启动一个程序，例如 notepad、calc、计算器、记事本。",
+        {"name": {"type": "string", "description": "程序名或可执行文件名"}},
+        ["name"],
+    ),
 ]
 
 
@@ -72,11 +117,41 @@ _IMPL = {
     "list_dir": list_dir,
     "read_file": read_file,
     "write_file": write_file,
+    "click": click,
+    "move": move,
+    "type_text": type_text,
+    "press_keys": press_keys,
+    "open_app": open_app,
 }
+
+_SPEC = {tool["function"]["name"]: tool["function"]["parameters"] for tool in TOOLS}
 
 
 def tool_names() -> list[str]:
     return list(_IMPL)
+
+
+def _validate_args(name: str, args: dict) -> str | None:
+    """按工具说明书校验参数。模型经常自造参数名，这里要能指出正确的。"""
+    spec = _SPEC.get(name)
+    if spec is None:
+        return None
+
+    allowed = set(spec.get("properties", {}))
+    required = set(spec.get("required", []))
+
+    unknown = set(args) - allowed
+    if unknown:
+        return (
+            f"参数不被支持：{sorted(unknown)}；"
+            f"{name} 只接受 {sorted(allowed)}"
+        )
+
+    missing = required - set(args)
+    if missing:
+        return f"缺少必填参数：{sorted(missing)}"
+
+    return None
 
 
 def execute(name: str, args: dict) -> dict:
@@ -84,7 +159,13 @@ def execute(name: str, args: dict) -> dict:
     func = _IMPL.get(name)
     if func is None:
         return {"error": f"没有名为 {name} 的工具"}
+
+    args = args or {}
+    invalid = _validate_args(name, args)
+    if invalid:
+        return {"error": invalid}
+
     try:
-        return func(**(args or {}))
+        return func(**args)
     except Exception as exc:
         return {"error": f"{name} 执行失败：{type(exc).__name__}: {exc}"}
