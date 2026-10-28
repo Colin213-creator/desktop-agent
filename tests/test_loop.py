@@ -20,7 +20,9 @@ def _fake_shot(tmp_path, name="s.png"):
 
 
 def _settings(tmp_path, **overrides):
-    return Settings(runs_dir=tmp_path / "runs", **overrides)
+    options = {"action_settle": 0}
+    options.update(overrides)
+    return Settings(runs_dir=tmp_path / "runs", **options)
 
 
 def test_loop_stops_at_max_steps(monkeypatch, tmp_path):
@@ -142,3 +144,43 @@ def test_run_task_feeds_retrieved_context_to_planner(monkeypatch, tmp_path):
 
     assert seen["skills"][0]["task"] == "旧技能"
     assert seen["sop"][0]["text"] == "住宿不超过 500 元"
+
+
+def test_single_retry_step_is_not_reported_as_success(monkeypatch, tmp_path):
+    monkeypatch.setattr(loop, "make_plan", lambda *a: [PlanStep(1, "x", "y", None)])
+    monkeypatch.setattr(loop, "capture", lambda d: _fake_shot(tmp_path))
+    monkeypatch.setattr(
+        loop, "operator", lambda step, shot: {"tool": "move", "args": {"x": 1, "y": 1}}
+    )
+    monkeypatch.setattr(loop, "verify", lambda *a: Verdict("retry", "没成", ""))
+
+    res = run_task(
+        "做点事",
+        confirm_fn=lambda q: True,
+        dry_run=True,
+        settings=_settings(tmp_path, action_settle=0),
+        use_rag=False,
+    )
+
+    assert res.status == "failed"
+
+
+def test_action_settle_delay_applied_before_after_capture(monkeypatch, tmp_path):
+    slept = []
+    monkeypatch.setattr(loop.time, "sleep", lambda s: slept.append(s))
+    monkeypatch.setattr(loop, "make_plan", lambda *a: [PlanStep(1, "x", "y", None)])
+    monkeypatch.setattr(loop, "capture", lambda d: _fake_shot(tmp_path))
+    monkeypatch.setattr(
+        loop, "operator", lambda step, shot: {"tool": "move", "args": {"x": 1, "y": 1}}
+    )
+    monkeypatch.setattr(loop, "verify", lambda *a: Verdict("continue", "ok", "一致"))
+
+    run_task(
+        "做点事",
+        confirm_fn=lambda q: True,
+        dry_run=True,
+        settings=_settings(tmp_path, action_settle=1.5),
+        use_rag=False,
+    )
+
+    assert 1.5 in slept

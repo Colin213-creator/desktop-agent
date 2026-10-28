@@ -17,6 +17,8 @@ class Settings:
     max_steps: int = 30
     max_seconds: int = 600
     max_llm_calls: int = 120
+    # 动作后等待界面渲染再截图，否则验证器会看到"还没出现"
+    action_settle: float = 1.5
     runs_dir: Path = Path("runs")
     sandbox_dir: Path = Path("runs/_sandbox")
 
@@ -42,6 +44,7 @@ def load_settings() -> Settings:
         max_steps=_int_env("DA_MAX_STEPS", defaults.max_steps),
         max_seconds=_int_env("DA_MAX_SECONDS", defaults.max_seconds),
         max_llm_calls=_int_env("DA_MAX_LLM_CALLS", defaults.max_llm_calls),
+        action_settle=float(os.environ.get("DA_ACTION_SETTLE", defaults.action_settle)),
         runs_dir=Path(os.environ.get("DA_RUNS_DIR", str(defaults.runs_dir))),
         sandbox_dir=Path(os.environ.get("DA_SANDBOX_DIR", str(defaults.sandbox_dir))),
     )

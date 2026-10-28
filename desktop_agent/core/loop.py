@@ -147,6 +147,7 @@ def run_task(
 
     budget = Budget(settings.max_steps, settings.max_seconds, settings.max_llm_calls)
     state = TaskState(task=task, plan=plan)
+    last_reason = ""
 
     for index, step in enumerate(plan, start=1):
         blocked_reason = budget.reason()
@@ -182,6 +183,8 @@ def run_task(
                 )
                 return finish("blocked", f"用户拒绝执行：{tool}", state.step_idx)
 
+        # 给界面一点渲染时间；否则刚启动的程序还没画出来，验证器就会判失败
+        time.sleep(max(0.0, settings.action_settle))
         after = capture(run_dir)
 
         try:
@@ -196,6 +199,7 @@ def run_task(
                 verdict.action, verdict.reason, 0.0,
             )
         )
+        last_reason = verdict.reason
 
         if verdict.action == "continue":
             state.failures = 0
@@ -208,5 +212,13 @@ def run_task(
                 f"连续 {state.failures} 次未达成：{verdict.reason}",
                 state.step_idx,
             )
+
+    # 只有每一步都 continue 才算成功；最后一步 retry 也绝不能报成功
+    if state.failures > 0:
+        return finish(
+            "failed",
+            f"任务结束时仍有未达成的步骤：{last_reason}",
+            state.step_idx,
+        )
 
     return finish("success", f"完成 {state.step_idx} 步", state.step_idx)
