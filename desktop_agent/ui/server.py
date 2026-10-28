@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from pathlib import Path
 from typing import Callable
 
@@ -20,10 +21,13 @@ class TaskRequest(BaseModel):
     task: str
 
 
-def create_app(state_feed: Callable[[], dict] | None = None) -> FastAPI:
-    """state_feed 每次调用返回当前状态，用于推送给网页。"""
+def create_app(
+    state_feed: Callable[[], dict] | None = None,
+    run_task_fn: Callable[[str], object] | None = None,
+) -> FastAPI:
+    """state_feed 每次调用返回当前状态；run_task_fn 收到任务后真正执行。"""
     app = FastAPI(title="桌面智能体")
-    state: dict = {"stopped": False, "feed": state_feed}
+    state: dict = {"stopped": False, "feed": state_feed, "current": None}
 
     @app.get("/")
     def index() -> FileResponse:
@@ -32,6 +36,11 @@ def create_app(state_feed: Callable[[], dict] | None = None) -> FastAPI:
     @app.post("/api/task")
     def submit(request: TaskRequest) -> dict:
         state["stopped"] = False
+        state["current"] = request.task
+        if callable(run_task_fn):
+            threading.Thread(
+                target=run_task_fn, args=(request.task,), daemon=True
+            ).start()
         return {"accepted": True, "task": request.task}
 
     @app.post("/api/stop")
