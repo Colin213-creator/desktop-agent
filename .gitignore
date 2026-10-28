@@ -13,3 +13,5 @@ knowledge/index/
 Thumbs.db
 .DS_Store
 .pytest_cache/
+skills/*.sqlite3
+knowledge/index/
