@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ..safety.abort import AgentAborted
+
 
 def _pg():
     import pyautogui
@@ -11,19 +13,31 @@ def _pg():
     return pyautogui
 
 
+def _guard(call):
+    try:
+        return call()
+    except Exception as exc:
+        if type(exc).__name__ == "FailSafeException":
+            raise AgentAborted() from exc
+        raise
+
+
 def type_text(text: str) -> dict:
     try:
         import pyperclip
 
         pyperclip.copy(text)
-        _pg().hotkey("ctrl", "v")
+        pg = _pg()
+        _guard(lambda: pg.hotkey("ctrl", "v"))
         method = "clipboard"
     except Exception:
-        _pg().write(text, interval=0.01)
+        pg = _pg()
+        _guard(lambda: pg.write(text, interval=0.01))
         method = "keyboard"
     return {"ok": True, "action": "type_text", "chars": len(text), "method": method}
 
 
 def press_keys(keys: list[str]) -> dict:
-    _pg().hotkey(*keys)
+    pg = _pg()
+    _guard(lambda: pg.hotkey(*keys))
     return {"ok": True, "action": "press_keys", "keys": keys}

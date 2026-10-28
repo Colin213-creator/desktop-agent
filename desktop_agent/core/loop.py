@@ -19,6 +19,7 @@ from ..memory.knowledge import KnowledgeBase
 from ..memory.skills import SkillStore
 from ..memory.trace import StepRecord, TraceWriter
 from ..perception.screen import ScreenShot, capture
+from ..safety.abort import AgentAborted
 from ..safety.budget import Budget
 from ..safety.guard import classify, guarded_execute
 from .planner import PlanStep, make_plan
@@ -156,7 +157,10 @@ def run_task(
         state.step_idx = index
 
         before = capture(run_dir)
-        action = operator(step, before)
+        try:
+            action = operator(step, before)
+        except AgentAborted:
+            return finish("aborted", "用户急停", state.step_idx)
         tool = str(action.get("tool", ""))
         args = action.get("args") or {}
         risk = classify(tool, args)
@@ -164,7 +168,10 @@ def run_task(
         if dry_run:
             result = {"dry_run": True, "tool": tool, "args": args}
         else:
-            result = guarded_execute(tool, args, confirm_fn=confirm_fn)
+            try:
+                result = guarded_execute(tool, args, confirm_fn=confirm_fn)
+            except AgentAborted:
+                return finish("aborted", "用户急停", state.step_idx)
             if result.get("blocked"):
                 writer.write_step(
                     StepRecord(

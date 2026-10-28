@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ..safety.abort import AgentAborted
+
 
 def _pg():
     import pyautogui
@@ -11,11 +13,23 @@ def _pg():
     return pyautogui
 
 
+def _guard(call):
+    """把 pyautogui 的 FailSafeException 转成能穿透工具层的急停信号。"""
+    try:
+        return call()
+    except Exception as exc:
+        if type(exc).__name__ == "FailSafeException":
+            raise AgentAborted() from exc
+        raise
+
+
 def click(x: int, y: int) -> dict:
-    _pg().click(int(x), int(y))
+    pg = _pg()
+    _guard(lambda: pg.click(int(x), int(y)))
     return {"ok": True, "action": "click", "x": int(x), "y": int(y)}
 
 
 def move(x: int, y: int) -> dict:
-    _pg().moveTo(int(x), int(y))
+    pg = _pg()
+    _guard(lambda: pg.moveTo(int(x), int(y)))
     return {"ok": True, "action": "move", "x": int(x), "y": int(y)}
