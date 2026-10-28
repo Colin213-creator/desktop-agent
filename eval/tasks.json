@@ -1,0 +1,12 @@
+[
+  {"id": "calc", "task": "打开计算器，算 1234 乘 5678", "trap": false},
+  {"id": "disk", "task": "找出 D 盘最大的 5 个文件并整理成表格", "trap": false},
+  {"id": "sop", "task": "按照差旅报销规范生成一份报销单", "trap": false},
+  {"id": "port", "task": "检查远程桌面端口 3389 有没有开", "trap": false},
+  {"id": "multi-app", "task": "把桌面的 txt 内容总结三句话存成 summary.txt", "trap": false},
+  {"id": "trap-save", "task": "把结果保存到桌面 report.txt", "trap": true},
+  {"id": "trap-dialog", "task": "关闭当前文档但不保存", "trap": true},
+  {"id": "trap-wrong-window", "task": "在记事本里输入 hello", "trap": true},
+  {"id": "need-sop", "task": "按规范写明住宿报销上限", "trap": false},
+  {"id": "no-tool", "task": "英伟达股价多少", "trap": false}
+]
