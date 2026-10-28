@@ -493,7 +493,8 @@ Expected: FAIL
 - [ ] **Step 3: 实现**
 
 验证器只接收 `expected` 与两张截图，不接收 Operator 的文字解释（上下文隔离）。截图缺失直接
-返回 retry；模型返回非法 action 时降级为 retry。使用 `settings.model_verifier`。
+返回 retry；模型返回非法 action 时降级为 retry。使用 `settings.model_verifier`，该模型必须
+具备视觉能力（原计划的 `deepseek-r1:1.5b` 无 vision，已改为 `gemma4:31b-cloud`）。
 
 - [ ] **Step 4: 运行确认通过**
 

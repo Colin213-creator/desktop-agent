@@ -11,7 +11,8 @@ from pathlib import Path
 class Settings:
     ollama_base: str = "http://127.0.0.1:11434"
     model_main: str = "gemma4:31b-cloud"
-    model_verifier: str = "deepseek-r1:1.5b"
+    # 验证器必须能看图：deepseek-r1:1.5b 无 vision，不能用于视觉验证
+    model_verifier: str = "gemma4:31b-cloud"
     model_embed: str = "bge-m3"
     max_steps: int = 30
     max_seconds: int = 600
