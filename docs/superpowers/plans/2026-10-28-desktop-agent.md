@@ -926,10 +926,64 @@ git add README.md docs && git commit -m "docs: 交付文档与六场景演示脚
 
 ---
 
+### Task 19: 截图脱敏与模型路由
+
+**Files:**
+- Create: `desktop_agent/safety/privacy.py`, `tests/test_privacy.py`
+- Modify: `requirements.txt`（加 Pillow）
+
+**Interfaces:**
+- Consumes: `ScreenShot`（Task 2）
+- Produces: `Mask(rect: tuple[int, int, int, int])`；`PrivacyPolicy(window_only: bool = True, masks: list[Mask] = [], cloud_upload: bool = True)`；`redact(src: Path, masks: list[Mask], out: Path) -> Path`；`route_model(policy: PrivacyPolicy, task: str) -> str`（返回 `"cloud"` 或 `"local"`）
+
+- [ ] **Step 1: 写失败测试**
+
+```python
+from PIL import Image
+
+def test_redact_blackens_configured_region(tmp_path):
+    src = tmp_path/"in.png"
+    Image.new("RGB", (100, 100), "white").save(src)
+    out = redact(src, [Mask((10, 10, 20, 20))], tmp_path/"out.png")
+    img = Image.open(out).convert("RGB")
+    assert img.getpixel((15, 15)) == (0, 0, 0)
+    assert img.getpixel((80, 80)) == (255, 255, 255)
+
+def test_sensitive_policy_routes_to_local_model():
+    assert route_model(PrivacyPolicy(cloud_upload=False), "登录网银") == "local"
+    assert route_model(PrivacyPolicy(cloud_upload=True), "打开计算器") == "cloud"
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `python -m pytest tests/test_privacy.py -v`
+Expected: FAIL，`ModuleNotFoundError: desktop_agent.safety.privacy`
+
+- [ ] **Step 3: 实现**
+
+`redact` 用 Pillow 复制原图并对每个 `Mask.rect` 填黑；越界矩形自动裁剪到图像边界。
+`route_model` 在 `cloud_upload=False` 时返回 `local`（对应 `settings` 里的本地视觉模型），
+否则返回 `cloud`。`PrivacyPolicy.window_only` 为 True 时 `capture` 只取活动窗口区域。
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `python -m pytest tests/test_privacy.py -v`
+Expected: PASS
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add desktop_agent/safety/privacy.py tests/test_privacy.py requirements.txt
+git commit -m "feat: 截图脱敏与本地/云端模型路由"
+```
+
+---
+
 ## 执行说明
 
-本计划共 18 个 Task，顺序即依赖顺序：Task 1–7 构成可用的单步执行器，Task 8–11 构成完整
+本计划共 19 个 Task，顺序即依赖顺序：Task 1–7 构成可用的单步执行器，Task 8–11 构成完整
 智能体循环，Task 12–13 接入两个 RAG，Task 14–17 补界面、远程、示范与评估，Task 18 收口交付物。
+Task 19 依赖 Task 2 的截图结果，排在 Task 10 主循环之前实现，其余 Task 编号保持不变。
 
 每个 Task 独立跑绿后再进入下一个；Task 10 完成后即可用终端跑通第一个演示场景，
 后续 Task 均可在已有闭环上增量验证。
